@@ -57,10 +57,26 @@ D. Remove extra spaces -done
 """
 
 def preprocess_text(text: str)->str:
-    text = text.lower()
-    text = re.sub(r"'","",text)
-    text = re.sub(r"[^a-z0-9\s]"," ", text)
-    text = re.sub(r"\s+", " ",text).strip()
+    text = text.lower().strip()
+
+    replacements = {
+        "can't": "cannot",
+        "won't": "will not",
+        "n't": " not",
+        "'re": " are",
+        "'ve": " have",
+        "'ll": " will",
+        "'d": " would",
+        "'m": " am",
+        "'s": " is",
+        "i'm": "i am",
+    }
+
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+
+    text = re.sub(r"[^a-z0-9\s]", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
     return text
 
 
@@ -163,10 +179,12 @@ def predict_emotion(text_input: TextInput):
     if BiGRU_model is None or tokenizer_model is None:
         raise HTTPException(status_code=503, detail="Model is not loaded yet. Please try again later.")
 
-    #1. 
+    #1.
     cleaned_text = preprocess_text(text_input.text)
+    if not cleaned_text:
+        raise HTTPException(status_code=400, detail="Please enter some meaningful text to analyze.")
 
-    #2. and 3. 
+    #2. and 3.
     tokenized_text = tokenizer_model.texts_to_sequences([cleaned_text])
     padded_sequence = pad_sequences(
         tokenized_text,
